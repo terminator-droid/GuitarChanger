@@ -1,10 +1,8 @@
 package com.dudev.jdbc.starter.dao;
 
+import com.dudev.jdbc.starter.dto.ProductDto;
 import com.dudev.jdbc.starter.dto.ProductFilter;
-import com.dudev.jdbc.starter.entity.ChangeType;
-import com.dudev.jdbc.starter.entity.Product;
-import com.dudev.jdbc.starter.entity.Role;
-import com.dudev.jdbc.starter.entity.User;
+import com.dudev.jdbc.starter.entity.*;
 import com.dudev.jdbc.starter.exception.DaoException;
 import com.dudev.jdbc.starter.util.ConnectionManager;
 
@@ -17,6 +15,7 @@ import static java.util.stream.Collectors.joining;
 public class ProductDao implements Dao<UUID, Product> {
 
     private static final ProductDao INSTANCE = new ProductDao();
+    private static final BrandDao brandDao = BrandDao.getInstance();
     private static final String DELETE_SQL = """
             DELETE FROM products
             WHERE id = ?
@@ -35,7 +34,7 @@ public class ProductDao implements Dao<UUID, Product> {
                 change_wish = ?
             WHERE id = ?          
             """;
-    public static final String FIND_ALL_SQL = """
+    private static final String FIND_ALL_SQL = """
             SELECT  products.id, 
                     products.timestamp, 
                     products.user_id, 
@@ -44,6 +43,7 @@ public class ProductDao implements Dao<UUID, Product> {
                     products.change_type,
                     products.change_value, 
                     products.change_wish,
+                    products.brand,
                     u.address,
                     u.first_name,
                     u.last_name,
@@ -56,13 +56,41 @@ public class ProductDao implements Dao<UUID, Product> {
                 on products.user_id = u.id
             JOIN project.change_types ct on ct.change_type = products.change_type
             """;
+    private static final String FIND_ALL_PRODUCTS_FOR_DTO = """
+            SELECT products.price,
+                b.name as brand,
+                case 
+                    when b.category = 1 then g.model
+                    else p.model
+                end as model
+            from project.products
+            left join project.brands b on products.brand = b.id
+            left join project.guitars g on products.id = g.product_id
+            left join project.pedals p on products.id = p.product_id
+            """;
 
-    public static final String FIND_BY_ID_SQL = FIND_ALL_SQL + """
+    private static final String FIND_BY_ID_SQL = FIND_ALL_SQL + """
             WHERE id = ?
             """;
 
 
     private ProductDao() {
+    }
+
+    public List<ProductDto> findAllProducts(){
+        try (Connection connection = ConnectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(FIND_ALL_PRODUCTS_FOR_DTO)) {
+            ResultSet resultSet = preparedStatement.executeQuery();
+            ArrayList<ProductDto> products = new ArrayList<>();
+            while (resultSet.next()) {
+                products.add(new ProductDto(resultSet.getString("brand"),
+                        resultSet.getString("model"),
+                        resultSet.getDouble("price")));
+            }
+            return products;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public List<Product> findByPriceAndChangeType(double price, ChangeType changeType, int priceDirection) {
@@ -74,7 +102,7 @@ public class ProductDao implements Dao<UUID, Product> {
         String whereSql = """
                  WHERE products.change_type = ? 
                  AND products.price %s ?
-                 AND
+                                
                 """.formatted(compareSign);
         String sql = FIND_ALL_SQL + whereSql;
 
@@ -120,6 +148,11 @@ public class ProductDao implements Dao<UUID, Product> {
             whereSql.add(" change_wish LIKE ?");
             parameters.add("%" + filter.changeWish() + "%");
         }
+        if (filter.brand() != 0) {
+            whereSql.add(" brand = ?");
+            parameters.add(filter.brand());
+        }
+
 
         String where = whereSql.stream().collect(joining(" AND ", "WHERE", " LIMIT ? OFFSET ? ORDER BY timestamp"));
 
@@ -226,6 +259,7 @@ public class ProductDao implements Dao<UUID, Product> {
                 resultSet.getInt("change_type"),
                 resultSet.getString("description")
         );
+        Brand brand = brandDao.findById(resultSet.getInt("brand")).orElse(null);
         return new Product(
                 resultSet.getObject("id", UUID.class),
                 resultSet.getTimestamp("timestamp").toLocalDateTime(),
@@ -234,7 +268,8 @@ public class ProductDao implements Dao<UUID, Product> {
                 resultSet.getBoolean("is_closed"),
                 changeType,
                 resultSet.getDouble("change_value"),
-                resultSet.getString("change_wish")
+                resultSet.getString("change_wish"),
+                brand
         );
     }
 

@@ -1,5 +1,7 @@
 package com.dudev.jdbc.starter.entity;
 
+import com.dudev.jdbc.starter.dao.BrandDao;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -13,8 +15,9 @@ public class Product {
     private ChangeType changeType;
     private double changeValue;
     private String changeWish;
+    private Brand brand;
 
-    public Product(UUID id, LocalDateTime timestamp, User user, Double price, boolean isClosed, ChangeType changeType, double changeValue, String changeWish) {
+    public Product(UUID id, LocalDateTime timestamp, User user, Double price, boolean isClosed, ChangeType changeType, double changeValue, String changeWish, Brand brand) {
         this.id = id;
         this.timestamp = timestamp;
         this.user = user;
@@ -23,6 +26,19 @@ public class Product {
         this.changeType = changeType;
         this.changeValue = changeValue;
         this.changeWish = changeWish;
+        this.brand = brand;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    public Brand getBrand() {
+        return brand;
+    }
+
+    public void setBrand(Brand brand) {
+        this.brand = brand;
     }
 
     public UUID getId() {
