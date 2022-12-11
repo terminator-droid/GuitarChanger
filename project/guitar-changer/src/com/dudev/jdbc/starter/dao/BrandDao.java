@@ -24,6 +24,10 @@ public class BrandDao implements Dao<Integer, Brand> {
             WHERE id = ?
             """;
 
+    public static final String FIND_BY_NAME = FIND_ALL_SQL +
+            """
+            WHERE name = ?
+            """;
     private BrandDao() {
     }
 
@@ -46,13 +50,19 @@ public class BrandDao implements Dao<Integer, Brand> {
         }
     }
 
-    private Brand createBrand(ResultSet resultSet) throws SQLException {
-        Category category = categoryDao.findById(resultSet.getInt("category")).orElse(null);
-        return new Brand(
-                resultSet.getInt("id"),
-                resultSet.getString("name"),
-                category
-        );
+    public Optional<Brand> findByName(String name) {
+        try (Connection connection = ConnectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(FIND_BY_NAME)) {
+            preparedStatement.setString(1, name);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            Brand brand = null;
+            if (resultSet.next()) {
+                brand = createBrand(resultSet);
+            }
+            return Optional.ofNullable(brand);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -69,6 +79,15 @@ public class BrandDao implements Dao<Integer, Brand> {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private Brand createBrand(ResultSet resultSet) throws SQLException {
+        Category category = categoryDao.findById(resultSet.getInt("category")).orElse(null);
+        return new Brand(
+                resultSet.getInt("id"),
+                resultSet.getString("name"),
+                category
+        );
     }
 
 

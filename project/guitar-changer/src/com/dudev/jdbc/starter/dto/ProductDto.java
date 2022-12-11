@@ -1,4 +1,6 @@
 package com.dudev.jdbc.starter.dto;
 
-public record ProductDto (String brand, String model, double price){
+import java.util.UUID;
+
+public record ProductDto (UUID id,  String brand, String model, double price){
 }
