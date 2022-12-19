@@ -10,16 +10,20 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
-@WebServlet("/products")
-public class ProductsServlet extends HttpServlet {
+import java.util.UUID;
+
+@WebServlet("/user-products")
+public class UserProductsServlet extends HttpServlet {
 
     private static final ProductService productService = ProductService.getInstance();
 
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        req.setAttribute("products", productService.getAllProducts());
+        req.setAttribute("products", productService.findProductsByUser(UUID.fromString(req.getParameter("userId")),
+                Integer.parseInt(req.getParameter("offset"))));
         RequestDispatcher dispatcher = req.getRequestDispatcher(JSPHelper.getPath("products"));
         dispatcher.forward(req, resp);
     }

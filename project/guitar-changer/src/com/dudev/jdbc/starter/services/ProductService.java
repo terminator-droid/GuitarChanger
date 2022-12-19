@@ -3,12 +3,10 @@ package com.dudev.jdbc.starter.services;
 import com.dudev.jdbc.starter.dao.GuitarDao;
 import com.dudev.jdbc.starter.dao.PedalDao;
 import com.dudev.jdbc.starter.dao.ProductDao;
-import com.dudev.jdbc.starter.dto.Dto;
-import com.dudev.jdbc.starter.dto.GuitarDto;
-import com.dudev.jdbc.starter.dto.PedalDto;
-import com.dudev.jdbc.starter.dto.ProductDto;
+import com.dudev.jdbc.starter.dto.*;
 import com.dudev.jdbc.starter.entity.Guitar;
 import com.dudev.jdbc.starter.entity.Pedal;
+import com.dudev.jdbc.starter.entity.User;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,18 +34,25 @@ public class ProductService {
                 .toList();
     }
 
-
+    public List<ProductDto> findProductsByUser(UUID userId, int offset) {
+        return productDao.findAll(new ProductFilter(10, offset, userId, 0,
+                false, 0, 0, null, 0)).stream()
+                .map(product -> new ProductDto(product.getId(), product.getBrand().name(),product.getModel(), product.getPrice()))
+                .toList();
+    }
 
     public Dto findById(UUID id) {
         Guitar guitar = guitarDao.findById(id).orElse(null);
         Pedal pedal = pedaldao.findById(id).orElse(null);
-        List<Object> products = new ArrayList<>();
         if (guitar != null) {
-            return new GuitarDto(guitar.getYear(), guitar.getCountry(), guitar.getPickUps(), guitar.getWood(),guitar.getChangeType().description(), guitar.getChangeWish(), guitar.getChangeValue(), guitar.getDescription());
-        } else {
+            return new GuitarDto(guitar.getYear(), guitar.getCountry(), guitar.getPickUps(), guitar.getWood(), guitar.getChangeType().description(), guitar.getChangeWish(), guitar.getChangeValue(), guitar.getDescription());
+        } else if (pedal != null){
             return new PedalDto(pedal.getDescription(), pedal.getChangeType().description(), pedal.getChangeValue(), pedal.getChangeWish());
+        } else {
+            return null;
         }
     }
+
     public List<String> getAllUsersByProducts() {
         return productDao.findAll().stream()
                 .map(product -> product.getUser().firstName())

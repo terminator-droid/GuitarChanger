@@ -1,6 +1,7 @@
 package com.dudev.jdbc.starter.dao;
 
 import com.dudev.jdbc.starter.entity.Category;
+import com.dudev.jdbc.starter.exception.DaoException;
 import com.dudev.jdbc.starter.util.ConnectionManager;
 
 import javax.swing.text.html.Option;
@@ -43,7 +44,7 @@ public class CategoryDao implements Dao<Integer, Category> {
             }
             return categories;
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new DaoException(e);
         }
     }
 
@@ -66,7 +67,7 @@ public class CategoryDao implements Dao<Integer, Category> {
             }
             return Optional.ofNullable(category);
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new DaoException(e);
         }
     }
 
@@ -79,5 +80,6 @@ public class CategoryDao implements Dao<Integer, Category> {
     public Category save(Category entity) {
         return null;
     }
+
 
 }
