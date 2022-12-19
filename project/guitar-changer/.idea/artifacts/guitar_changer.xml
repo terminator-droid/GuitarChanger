@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="war" name="guitar-changer">
+    <output-path>$PROJECT_DIR$/out/artifacts/guitar_changer</output-path>
+    <root id="archive" name="guitar-changer.war">
+      <element id="artifact" artifact-name="guitar-changer:Web exploded" />
+    </root>
+  </artifact>
+</component>

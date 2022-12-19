@@ -20,6 +20,7 @@ public class PropertiesUtil {
     public static String get(String key) {
         return PROPERTIES.getProperty(key);
     }
+
     private static void loadProperties() {
         try (InputStream resourceAsStream = PropertiesUtil.class.getClassLoader().getResourceAsStream("application.properties")) {
             PROPERTIES.load(resourceAsStream);
@@ -27,5 +28,4 @@ public class PropertiesUtil {
             throw new RuntimeException(e);
         }
     }
-
 }

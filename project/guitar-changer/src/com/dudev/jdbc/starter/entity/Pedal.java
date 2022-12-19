@@ -1,42 +1,45 @@
 package com.dudev.jdbc.starter.entity;
 
-import com.dudev.jdbc.starter.dao.BrandDao;
-
-import java.lang.invoke.StringConcatException;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-public class Product {
+public class Pedal implements Product{
+
 
     private UUID id;
+    private String model;
+    private String description;
+    private String media;
     private LocalDateTime timestamp;
     private User user;
-    private Double price;
+    private double price;
+    private Brand brand;
     private boolean isClosed;
     private ChangeType changeType;
     private double changeValue;
     private String changeWish;
-    private Brand brand;
-    private String model;
-    private String description;
 
-    public void setUser(User user) {
-        this.user = user;
-    }
-
-    public Product(UUID id, LocalDateTime timestamp, User user, Double price, boolean isClosed, ChangeType changeType,
-                   double changeValue, String changeWish, Brand brand, String model, String description) {
+    public Pedal(UUID id, String model, String description, String media, LocalDateTime timestamp, User user, double price, Brand brand, boolean isClosed, ChangeType changeType, double changeValue, String changeWish) {
         this.id = id;
+        this.model = model;
+        this.description = description;
+        this.media = media;
         this.timestamp = timestamp;
         this.user = user;
         this.price = price;
+        this.brand = brand;
         this.isClosed = isClosed;
         this.changeType = changeType;
         this.changeValue = changeValue;
         this.changeWish = changeWish;
-        this.brand = brand;
-        this.model = model;
-        this.description = description;
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
     }
 
     public String getModel() {
@@ -55,20 +58,12 @@ public class Product {
         this.description = description;
     }
 
-    public Brand getBrand() {
-        return brand;
+    public String getMedia() {
+        return media;
     }
 
-    public void setBrand(Brand brand) {
-        this.brand = brand;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
+    public void setMedia(String media) {
+        this.media = media;
     }
 
     public LocalDateTime getTimestamp() {
@@ -83,16 +78,24 @@ public class Product {
         return user;
     }
 
-    public void setUserId(User user) {
+    public void setUser(User user) {
         this.user = user;
     }
 
-    public Double getPrice() {
+    public double getPrice() {
         return price;
     }
 
-    public void setPrice(Double price) {
+    public void setPrice(double price) {
         this.price = price;
+    }
+
+    public Brand getBrand() {
+        return brand;
+    }
+
+    public void setBrand(Brand brand) {
+        this.brand = brand;
     }
 
     public boolean isClosed() {
@@ -125,19 +128,5 @@ public class Product {
 
     public void setChangeWish(String changeWish) {
         this.changeWish = changeWish;
-    }
-
-    @Override
-    public String toString() {
-        return "ProductEntity{" +
-                "id='" + id + '\'' +
-                ", timestamp=" + timestamp +
-                ", user='" + user + '\'' +
-                ", price=" + price +
-                ", isClosed=" + isClosed +
-                ", changeType=" + changeType +
-                ", changeValue=" + changeValue +
-                ", changeWish='" + changeWish + '\'' +
-                '}';
     }
 }

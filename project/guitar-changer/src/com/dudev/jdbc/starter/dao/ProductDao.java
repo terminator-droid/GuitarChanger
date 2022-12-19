@@ -1,10 +1,8 @@
 package com.dudev.jdbc.starter.dao;
 
+import com.dudev.jdbc.starter.dto.ProductDto;
 import com.dudev.jdbc.starter.dto.ProductFilter;
-import com.dudev.jdbc.starter.entity.ChangeType;
-import com.dudev.jdbc.starter.entity.Product;
-import com.dudev.jdbc.starter.entity.Role;
-import com.dudev.jdbc.starter.entity.User;
+import com.dudev.jdbc.starter.entity.*;
 import com.dudev.jdbc.starter.exception.DaoException;
 import com.dudev.jdbc.starter.util.ConnectionManager;
 
@@ -14,83 +12,76 @@ import java.util.*;
 import static com.dudev.jdbc.starter.util.ConstantUtil.CHANGE_DELTA;
 import static java.util.stream.Collectors.joining;
 
-public class ProductDao implements Dao<UUID, Product> {
+public class ProductDao {
 
     private static final ProductDao INSTANCE = new ProductDao();
-    private static final String DELETE_SQL = """
-            DELETE FROM products
-            WHERE id = ?
+    private static final BrandDao brandDao = BrandDao.getInstance();
+    private static final UserDao userDao = UserDao.getInstance();
+    private static final ChangeTypeDao changeTypeDao = ChangeTypeDao.getInstance();
+
+    private static final String ADD_LIKED_PRODUCT = """
+            INSERT INTO users_liked_products (user_id, product) VALUES 
+            (?, ?)
             """;
-    public static final String SAVE_SQL = """
-            INSERT INTO products (timestamp, user_id, price, change_type, change_value, change_wish) VALUES
-            (?, ?, ?, ?, ?, ?)
+    private static final String DELETE_LIKED_PRODUCT = """
+            DELETE FROM users_liked_products WHERE user_id = ? AND product = ?
             """;
-    private static final String UPDATE_SQL = """
-            UPDATE products
-            set timestamp = ?,
-                user_id = ?,
-                price = ?,
-                change_type = ?,
-                change_value = ?,
-                change_wish = ?
-            WHERE id = ?          
-            """;
-    public static final String FIND_ALL_SQL = """
-            SELECT  products.id, 
-                    products.timestamp, 
-                    products.user_id, 
-                    products.price, 
-                    products.is_closed, 
-                    products.change_type,
-                    products.change_value, 
-                    products.change_wish,
-                    u.address,
-                    u.first_name,
-                    u.last_name,
-                    u.password,
-                    u.phone_number,
-                    u.role,
-                    ct.description
-            FROM project.products 
-            JOIN project.users u 
-                on products.user_id = u.id
-            JOIN project.change_types ct on ct.change_type = products.change_type
+    private static final String FIND_ALL_SQL = """
+            SELECT  id, 
+                    timestamp, 
+                    user_id, 
+                    price, 
+                    is_closed, 
+                    change_type,
+                    change_value, 
+                    change_wish,
+                    brand,
+                    model,
+                    description
+            FROM project.guitars 
+            UNION ALL
+            SELECT  id, 
+                    timestamp, 
+                    user_id, 
+                    price, 
+                    is_closed, 
+                    change_type,
+                    change_value, 
+                    change_wish,
+                    brand,
+                    model,
+                    description
+            FROM project.pedals 
             """;
 
-    public static final String FIND_BY_ID_SQL = FIND_ALL_SQL + """
+    private static final String FIND_BY_ID_SQL = FIND_ALL_SQL + """
             WHERE id = ?
             """;
-
 
     private ProductDao() {
     }
 
-    public List<Product> findByPriceAndChangeType(double price, ChangeType changeType, int priceDirection) {
-        char compareSign = switch (priceDirection) {
-            case 1 -> '>';
-            case 2 -> '<';
-            default -> '=';
-        };
-        String whereSql = """
-                 WHERE products.change_type = ? 
-                 AND products.price %s ?
-                 AND
-                """.formatted(compareSign);
-        String sql = FIND_ALL_SQL + whereSql;
-
+    public void deleteLikedProduct(UUID userId, UUID productId) {
         try (Connection connection = ConnectionManager.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            preparedStatement.setInt(1, changeType.changeType());
-            preparedStatement.setDouble(2, price);
+             PreparedStatement preparedStatement = connection.prepareStatement(DELETE_LIKED_PRODUCT)) {
+            preparedStatement.setString(1, userId.toString());
+            preparedStatement.setString(2, productId.toString());
 
-            ResultSet resultSet = preparedStatement.executeQuery();
-            List<Product> products = new ArrayList<>();
-            while (resultSet.next()) {
-                products.add(createProduct(resultSet));
-            }
-            return products;
+            preparedStatement.executeUpdate();
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new DaoException(e);
+        }
+    }
+
+    public void insertLikedProduct(UUID userId, UUID productId) {
+        try (Connection connection = ConnectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(ADD_LIKED_PRODUCT)) {
+            preparedStatement.setString(1, userId.toString());
+            preparedStatement.setString(2, productId.toString());
+
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new DaoException(e);
         }
     }
 
@@ -120,9 +111,11 @@ public class ProductDao implements Dao<UUID, Product> {
             whereSql.add(" change_wish LIKE ?");
             parameters.add("%" + filter.changeWish() + "%");
         }
-
+        if (filter.brand() != 0) {
+            whereSql.add(" brand = ?");
+            parameters.add(filter.brand());
+        }
         String where = whereSql.stream().collect(joining(" AND ", "WHERE", " LIMIT ? OFFSET ? ORDER BY timestamp"));
-
         String sql = FIND_ALL_SQL + where;
 
         parameters.add(filter.limit());
@@ -174,58 +167,10 @@ public class ProductDao implements Dao<UUID, Product> {
         }
     }
 
-    public void update(Product product) {
-        try (Connection connection = ConnectionManager.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(UPDATE_SQL)) {
-            preparedStatement.setTimestamp(1, Timestamp.valueOf(product.getTimestamp()));
-            preparedStatement.setString(2, product.getUser().id().toString());
-            preparedStatement.setDouble(3, product.getPrice());
-            preparedStatement.setInt(4, product.getChangeType().changeType());
-            preparedStatement.setObject(5, product.getChangeValue(), Types.DOUBLE);
-            preparedStatement.setObject(6, product.getChangeWish(), Types.VARCHAR);
-            preparedStatement.setString(7, product.getId().toString());
-
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            throw new DaoException(e);
-        }
-    }
-
-    public Product save(Product product) {
-        try (Connection connection = ConnectionManager.getConnection();
-             PreparedStatement insertStatement = connection.prepareStatement(SAVE_SQL, Statement.RETURN_GENERATED_KEYS)) {
-            insertStatement.setTimestamp(1, Timestamp.valueOf(product.getTimestamp()));
-            insertStatement.setString(2, product.getUser().id().toString());
-            insertStatement.setDouble(3, product.getPrice());
-            insertStatement.setInt(4, product.getChangeType().changeType());
-            insertStatement.setObject(5, product.getChangeValue(), Types.DOUBLE);
-            insertStatement.setObject(6, product.getChangeWish(), Types.VARCHAR);
-
-            insertStatement.executeUpdate();
-            ResultSet generatedKeys = insertStatement.getGeneratedKeys();
-            if (generatedKeys.next()) {
-                product.setId(generatedKeys.getObject("id", UUID.class));
-            }
-            return product;
-        } catch (SQLException e) {
-            throw new DaoException(e);
-        }
-    }
-
     private static Product createProduct(ResultSet resultSet) throws SQLException {
-        User user = new User(
-                UUID.fromString(resultSet.getString("user_id")),
-                resultSet.getString("first_name"),
-                resultSet.getString("last_name"),
-                resultSet.getString("phone_number"),
-                resultSet.getString("password"),
-                resultSet.getString("address"),
-                Role.getRoleFromString(resultSet.getString("role"))
-        );
-        ChangeType changeType = new ChangeType(
-                resultSet.getInt("change_type"),
-                resultSet.getString("description")
-        );
+        User user = userDao.findById(UUID.fromString(resultSet.getString("user_id"))).orElse(null);
+        Brand brand = brandDao.findByName(resultSet.getString("brand")).orElse(null);
+        ChangeType changeType = changeTypeDao.findById(resultSet.getInt("change_type")).orElse(null);
         return new Product(
                 resultSet.getObject("id", UUID.class),
                 resultSet.getTimestamp("timestamp").toLocalDateTime(),
@@ -234,25 +179,14 @@ public class ProductDao implements Dao<UUID, Product> {
                 resultSet.getBoolean("is_closed"),
                 changeType,
                 resultSet.getDouble("change_value"),
-                resultSet.getString("change_wish")
+                resultSet.getString("change_wish"),
+                brand,
+                resultSet.getString("model"),
+                resultSet.getString("description")
         );
-    }
-
-
-    public boolean delete(UUID id) {
-        try (Connection connection = ConnectionManager.getConnection();
-             PreparedStatement deleteStatement = connection.prepareStatement(DELETE_SQL)) {
-            deleteStatement.setString(1, id.toString());
-            int i = deleteStatement.executeUpdate();
-            return i == 1;
-        } catch (SQLException e) {
-            throw new DaoException(e);
-        }
     }
 
     public static ProductDao getInstance() {
         return INSTANCE;
     }
-
-
 }

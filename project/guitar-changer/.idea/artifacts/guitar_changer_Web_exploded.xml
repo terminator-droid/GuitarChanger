@@ -1,0 +1,17 @@
+<component name="ArtifactManager">
+  <artifact type="exploded-war" name="guitar-changer:Web exploded">
+    <output-path>$PROJECT_DIR$/out/artifacts/guitar_changer_Web_exploded</output-path>
+    <root id="root">
+      <element id="javaee-facet-resources" facet="guitar-changer/web/Web" />
+      <element id="directory" name="WEB-INF">
+        <element id="directory" name="classes">
+          <element id="module-output" name="guitar-changer" />
+        </element>
+        <element id="directory" name="lib">
+          <element id="file-copy" path="C:/jdk-17_windows-x64_bin/jdk-17.0.2/postgresql-42.5.0.jar" />
+          <element id="library" level="project" name="lib" />
+        </element>
+      </element>
+    </root>
+  </artifact>
+</component>
