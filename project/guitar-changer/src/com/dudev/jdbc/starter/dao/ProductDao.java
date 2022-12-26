@@ -27,7 +27,7 @@ public class ProductDao {
             DELETE FROM users_liked_products WHERE user_id = ? AND product = ?
             """;
     private static final String FIND_ALL_SQL = """
-            SELECT  id, 
+            SELECT * FROM (SELECT  id, 
                     timestamp, 
                     user_id, 
                     price, 
@@ -51,7 +51,7 @@ public class ProductDao {
                     brand,
                     model,
                     description
-            FROM project.pedals 
+            FROM project.pedals) as prod 
             """;
 
     private static final String FIND_BY_ID_SQL = FIND_ALL_SQL + """
@@ -89,33 +89,33 @@ public class ProductDao {
         List<Object> parameters = new ArrayList<>();
         List<String> whereSql = new ArrayList<>();
         if (filter.userId() != null) {
-            whereSql.add(" user_id = ?");
+            whereSql.add(" prod.user_id = ?");
             parameters.add(filter.userId());
         }
         if (filter.price() != 0) {
             int lowerBoundOfPrice = filter.price() - CHANGE_DELTA > 0 ? (int) (filter.price() - CHANGE_DELTA) : 0;
-            whereSql.add(" between " + lowerBoundOfPrice + " AND " + (filter.price() + CHANGE_DELTA));
+            whereSql.add(" prod.price between " + lowerBoundOfPrice + " AND " + (filter.price() + CHANGE_DELTA));
             parameters.add(filter.price());
         }
-        whereSql.add(" is_closed = ? ");
+        whereSql.add(" prod.is_closed = ? ");
         parameters.add(filter.isClosed());
         if (filter.changeType() != 0) {
-            whereSql.add(" change_type = ? ");
+            whereSql.add(" prod.change_type = ? ");
             parameters.add(filter.changeType());
         }
         if (filter.changeValue() != 0) {
-            whereSql.add(" change_value = ?");
+            whereSql.add(" prod.change_value = ?");
             parameters.add(filter.changeValue());
         }
         if (filter.changeWish() != null) {
-            whereSql.add(" change_wish LIKE ?");
+            whereSql.add(" prod.change_wish LIKE ?");
             parameters.add("%" + filter.changeWish() + "%");
         }
         if (filter.brand() != 0) {
-            whereSql.add(" brand = ?");
+            whereSql.add(" prod.brand = ?");
             parameters.add(filter.brand());
         }
-        String where = whereSql.stream().collect(joining(" AND ", "WHERE", " LIMIT ? OFFSET ? ORDER BY timestamp"));
+        String where = whereSql.stream().collect(joining(" AND ", "WHERE", " ORDER BY timestamp LIMIT ? OFFSET ? "));
         String sql = FIND_ALL_SQL + where;
 
         parameters.add(filter.limit());

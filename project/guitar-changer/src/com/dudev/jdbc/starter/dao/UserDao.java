@@ -1,14 +1,13 @@
 package com.dudev.jdbc.starter.dao;
 
+import com.dudev.jdbc.starter.entity.Product;
 import com.dudev.jdbc.starter.entity.Role;
 import com.dudev.jdbc.starter.entity.User;
 import com.dudev.jdbc.starter.exception.DaoException;
 import com.dudev.jdbc.starter.util.ConnectionManager;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,6 +26,11 @@ public class UserDao implements Dao<UUID, User> {
             WHERE users.id = ? :: uuid                       
             """;
 
+    private static final String SAVE_SQL = """
+            INSERT INTO project.users (first_name, last_name, phone_number, password, address, role, username)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """;
+
     public UserDao() {
     }
 
@@ -36,7 +40,17 @@ public class UserDao implements Dao<UUID, User> {
 
     @Override
     public List<User> findAll() {
-        return null;
+        try (Connection connection = ConnectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(FIND_ALL)) {
+            ResultSet resultSet = preparedStatement.executeQuery();
+            List<User> users = new ArrayList<>();
+            while (resultSet.next()) {
+                users.add(createUser(resultSet));
+            }
+            return users;
+        } catch (SQLException e) {
+            throw new DaoException(e);
+        }
     }
 
     @Override
@@ -69,12 +83,32 @@ public class UserDao implements Dao<UUID, User> {
     }
 
     @Override
-    public void update(User entity) {
+    public void update(User user) {
 
     }
 
     @Override
-    public User save(User entity) {
-        return null;
+    public User save(User user) {
+        try (Connection connection = ConnectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(SAVE_SQL, Statement.RETURN_GENERATED_KEYS)) {
+            preparedStatement.setString(1, user.firstName());
+            preparedStatement.setString(2, user.lastName());
+            preparedStatement.setString(3, user.phoneNumber());
+            preparedStatement.setString(4, user.phoneNumber());
+            preparedStatement.setString(5, user.address());
+            preparedStatement.setString(6, user.role().name());
+            preparedStatement.setString(7, user.username());
+
+            preparedStatement.executeUpdate();
+            ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
+            UUID id = null;
+            while (generatedKeys.next()) {
+                id = UUID.fromString(generatedKeys.getString("id"));
+            }
+//            user.setId(id);
+            return user;
+        } catch (SQLException e) {
+            throw new DaoException(e);
+        }
     }
 }

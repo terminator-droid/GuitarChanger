@@ -3,7 +3,7 @@ package com.dudev.jdbc.starter.entity;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-public class Pedal implements Product{
+public class Pedal {
 
 
     private UUID id;

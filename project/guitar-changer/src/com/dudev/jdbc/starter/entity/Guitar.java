@@ -3,7 +3,7 @@ package com.dudev.jdbc.starter.entity;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-public class Guitar implements Product{
+public class Guitar {
 
     private UUID id;
     private String model;

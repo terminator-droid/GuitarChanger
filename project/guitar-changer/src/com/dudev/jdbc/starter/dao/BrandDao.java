@@ -2,6 +2,7 @@ package com.dudev.jdbc.starter.dao;
 
 import com.dudev.jdbc.starter.entity.Brand;
 import com.dudev.jdbc.starter.entity.Category;
+import com.dudev.jdbc.starter.exception.DaoException;
 import com.dudev.jdbc.starter.util.ConnectionManager;
 
 import java.sql.Connection;
@@ -46,7 +47,7 @@ public class BrandDao implements Dao<Integer, Brand> {
             }
             return brands;
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new DaoException(e);
         }
     }
 
@@ -61,7 +62,7 @@ public class BrandDao implements Dao<Integer, Brand> {
             }
             return Optional.ofNullable(brand);
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new DaoException(e);
         }
     }
 
@@ -77,7 +78,7 @@ public class BrandDao implements Dao<Integer, Brand> {
             }
             return Optional.ofNullable(brand);
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new DaoException(e);
         }
     }
 
@@ -89,7 +90,6 @@ public class BrandDao implements Dao<Integer, Brand> {
                 category
         );
     }
-
 
     @Override
     public void update(Brand entity) {

@@ -53,7 +53,6 @@ public final class ConnectionManager {
                             : method.invoke(connection, args));
             pool.add(connectionProxy);
             sourceConnections.add(connection);
-
         }
     }
 
@@ -65,7 +64,6 @@ public final class ConnectionManager {
                 throw new RuntimeException(e);
             }
         }
-
     }
 
     public static Connection getConnection() {
@@ -74,7 +72,6 @@ public final class ConnectionManager {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-
     }
 
     private static Connection open() {

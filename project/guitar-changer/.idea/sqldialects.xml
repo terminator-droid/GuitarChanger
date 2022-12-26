@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="SqlDialectMappings">
+    <file url="file://$APPLICATION_CONFIG_DIR$/consoles/db/15d49839-d3c3-4e3f-ae58-29681e888879/console.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/resources/guitar-changer-insertion.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/src/migrations/V00001_Create_changer.sql" dialect="GenericSQL" />
   </component>
