@@ -1,10 +1,12 @@
 package com.dudev.jdbc.starter.dao;
 
 import com.dudev.jdbc.starter.dto.GuitarFilter;
+import com.dudev.jdbc.starter.dto.ProductFilter;
 import com.dudev.jdbc.starter.entity.*;
 import com.dudev.jdbc.starter.dao.ChangeTypeDao;
 import com.dudev.jdbc.starter.exception.DaoException;
 import com.dudev.jdbc.starter.util.ConnectionManager;
+import lombok.SneakyThrows;
 
 import javax.swing.text.html.Option;
 import java.sql.*;
@@ -18,7 +20,7 @@ import static java.util.stream.Collectors.*;
 
 public class GuitarDao implements Dao<UUID, Guitar> {
 
-    public static final GuitarDao INSTANCE = new GuitarDao();
+    private static final GuitarDao INSTANCE = new GuitarDao();
     private static final ChangeTypeDao changeTypeDao = ChangeTypeDao.getInstance();
 
     private static final BrandDao brandDao = BrandDao.getInstance();
@@ -63,6 +65,9 @@ public class GuitarDao implements Dao<UUID, Guitar> {
                 change_wish = ?
             WHERE id = ?          
             """;
+    private static final String DELETE_GUITARS = """
+            DELETE FROM project.guitars       
+            """;
 
 
     private GuitarDao() {
@@ -87,7 +92,7 @@ public class GuitarDao implements Dao<UUID, Guitar> {
 
         try (Connection connection = ConnectionManager.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            preparedStatement.setInt(1, changeType.changeType());
+            preparedStatement.setInt(1, changeType.getChangeType());
             preparedStatement.setDouble(2, price);
 
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -207,11 +212,11 @@ public class GuitarDao implements Dao<UUID, Guitar> {
             preparedStatement.setString(5, guitar.getWood());
             preparedStatement.setString(6, guitar.getMedia());
             preparedStatement.setTimestamp(7, Timestamp.valueOf(guitar.getTimestamp()));
-            preparedStatement.setString(8, String.valueOf(guitar.getUser().id()));
+            preparedStatement.setString(8, String.valueOf(guitar.getUser().getId()));
             preparedStatement.setDouble(9, guitar.getPrice());
             preparedStatement.setString(10, guitar.getBrand().name());
             preparedStatement.setBoolean(11, guitar.isClosed());
-            preparedStatement.setInt(12, guitar.getChangeType().changeType());
+            preparedStatement.setInt(12, guitar.getChangeType().getChangeType());
             preparedStatement.setDouble(13, guitar.getChangeValue());
             preparedStatement.setString(14, guitar.getChangeWish());
 
@@ -233,11 +238,11 @@ public class GuitarDao implements Dao<UUID, Guitar> {
             preparedStatement.setString(6, guitar.getWood());
             preparedStatement.setString(7, guitar.getMedia());
             preparedStatement.setTimestamp(8, Timestamp.valueOf(guitar.getTimestamp()));
-            preparedStatement.setString(9, guitar.getUser().id().toString());
+            preparedStatement.setString(9, guitar.getUser().getId().toString());
             preparedStatement.setDouble(10, guitar.getPrice());
             preparedStatement.setString(11, guitar.getBrand().name());
             preparedStatement.setBoolean(12, guitar.isClosed());
-            preparedStatement.setInt(13, guitar.getChangeType().changeType());
+            preparedStatement.setInt(13, guitar.getChangeType().getChangeType());
             preparedStatement.setDouble(14, guitar.getChangeValue());
             preparedStatement.setString(15, guitar.getChangeWish());
 
@@ -255,27 +260,92 @@ public class GuitarDao implements Dao<UUID, Guitar> {
         }
     }
 
+    @SneakyThrows
+    public void delete(GuitarFilter filter) {
+        List<String> whereConditions = new ArrayList<>();
+        List<Object> fields = new ArrayList<>();
+        if (filter.brand() != null) {
+            whereConditions.add(" brand = ?");
+            fields.add(filter.brand());
+        }
+        if (filter.changeType() != 0) {
+            whereConditions.add(" change_type = ?");
+            fields.add(filter.changeType());
+        }
+        whereConditions.add("is_closed = ?");
+        fields.add(filter.isClosed());
+        if (filter.user() != null) {
+            whereConditions.add(" user_id = ?");
+            fields.add(filter.user());
+        }
+        String sql = DELETE_GUITARS + " WHERE " + String.join(" AND ", whereConditions);
+
+        try (Connection connection = ConnectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            for (int i = 0; i < whereConditions.size(); i++) {
+                preparedStatement.setObject(i + 1, fields.get(i));
+            }
+            preparedStatement.executeUpdate();
+        }
+    }
+
+    @SneakyThrows
+    public void delete(GuitarFilter filter, Connection connection) {
+        List<String> whereConditions = new ArrayList<>();
+        List<Object> fields = new ArrayList<>();
+        if (filter.brand() != null) {
+            whereConditions.add(" brand = ?");
+            fields.add(filter.brand());
+        }
+        if (filter.changeType() != 0) {
+            whereConditions.add(" change_type = ?");
+            fields.add(filter.changeType());
+        }
+        if (filter.isClosed()) {
+            whereConditions.add("is_closed = ?");
+            fields.add(true);
+        }
+        if (filter.user() != null) {
+            whereConditions.add(" user_id = ?");
+            fields.add(filter.user());
+        }
+        String sql = DELETE_GUITARS + " WHERE " + String.join(" AND ", whereConditions);
+        PreparedStatement preparedStatement = null;
+        try {
+            preparedStatement = connection.prepareStatement(sql);
+            for (int i = 0; i < whereConditions.size(); i++) {
+                preparedStatement.setObject(i + 1, fields.get(i));
+            }
+            preparedStatement.executeUpdate();
+        } finally {
+            if (preparedStatement != null) {
+                preparedStatement.close();
+            }
+        }
+    }
+
     private Guitar createGuitar(ResultSet resultSet) throws SQLException {
         ChangeType changeType = changeTypeDao.findById(resultSet.getInt("change_type")).orElse(null);
         Brand brand = brandDao.findByName(resultSet.getString("brand")).orElse(null);
         User user = userDao.findById(UUID.fromString(resultSet.getString("user_id"))).orElse(null);
-        return new Guitar(
-                UUID.fromString(resultSet.getString("id")),
-                resultSet.getString("model"),
-                resultSet.getString("description"),
-                resultSet.getInt("year"),
-                resultSet.getString("country"),
-                resultSet.getString("pick_ups"),
-                resultSet.getString("fingerboard_wood"),
-                resultSet.getString("media_name"),
-                resultSet.getTimestamp("timestamp").toLocalDateTime(),
-                user,
-                resultSet.getDouble("price"),
-                brand,
-                resultSet.getBoolean("is_closed"),
-                changeType,
-                resultSet.getDouble("change_value"),
-                resultSet.getString("change_wish")
-        );
+        return Guitar.builder()
+                .id(UUID.fromString(resultSet.getString("id")))
+                .brand(brand)
+                .changeType(changeType)
+                .changeValue(resultSet.getDouble("change_value"))
+                .model(resultSet.getString("model"))
+                .description(resultSet.getString("description"))
+                .changeWish(resultSet.getString("change_wish"))
+                .country(resultSet.getString("country"))
+                .isClosed(resultSet.getBoolean("is_closed"))
+                .pickUps(resultSet.getString("pick_ups"))
+                .timestamp(resultSet.getTimestamp("timestamp").toLocalDateTime())
+                .user(user)
+                .model(resultSet.getString("model"))
+                .year(resultSet.getInt("year"))
+                .wood(resultSet.getString("fingerboard_wood"))
+                .media(resultSet.getString("media_name"))
+                .price(resultSet.getDouble("price"))
+                .build();
     }
 }

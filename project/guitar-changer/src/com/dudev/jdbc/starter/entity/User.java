@@ -1,11 +1,21 @@
 package com.dudev.jdbc.starter.entity;
 
 
+import lombok.Builder;
+import lombok.Data;
+import lombok.Value;
+
 import java.util.UUID;
 
-public record User(UUID id, String firstName, String lastName, String phoneNumber, String password, String address,
-                   Role role, String username) {
-    public User(String firstName, String lastName, String phoneNumber, String password, String address, Role role, String username) {
-        this(null, firstName, lastName, phoneNumber, password, address, role, username);
-    }
+@Data
+@Builder
+public class User {
+    private UUID id;
+    private String firstName;
+    private String lastName;
+    private String phoneNumber;
+    private String password;
+    private String address;
+    private Role role;
+    private String username;
 }

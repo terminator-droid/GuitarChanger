@@ -12,9 +12,19 @@
     <title>Title</title>
 </head>
 <body>
-    <h1>
-        Available products:
-    </h1>
+    <%@include file="header.jsp"%>
+    <c:choose>
+        <c:when test="${not empty requestScope.user}">
+            <h1>
+                User ${requestScope.user.username} products
+            </h1>
+        </c:when>
+        <c:otherwise>
+            <h1>
+                Available products:
+            </h1>
+        </c:otherwise>
+    </c:choose>
     <ul>
         <c:forEach var="product" items="${requestScope.products}">
         <li>

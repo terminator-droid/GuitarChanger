@@ -5,12 +5,16 @@ import com.dudev.jdbc.starter.dto.ProductFilter;
 import com.dudev.jdbc.starter.entity.*;
 import com.dudev.jdbc.starter.exception.DaoException;
 import com.dudev.jdbc.starter.util.ConnectionManager;
+import lombok.SneakyThrows;
 
 import java.sql.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.dudev.jdbc.starter.util.ConstantUtil.CHANGE_DELTA;
+import static java.util.stream.Collectors.*;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 
 public class ProductDao {
 
@@ -19,6 +23,9 @@ public class ProductDao {
     private static final UserDao userDao = UserDao.getInstance();
     private static final ChangeTypeDao changeTypeDao = ChangeTypeDao.getInstance();
 
+    private static final String DELETE_PRODUCTS = """
+            DELETE FROM products
+            """;
     private static final String ADD_LIKED_PRODUCT = """
             INSERT INTO users_liked_products (user_id, product) VALUES 
             (?, ?)
@@ -59,6 +66,15 @@ public class ProductDao {
             """;
 
     private ProductDao() {
+    }
+
+    @SneakyThrows
+    public void deleteById(UUID id) {
+        String sql = DELETE_PRODUCTS + "WHERE ID = ?";
+        try (Connection connection = ConnectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.executeUpdate();
+        }
     }
 
     public void deleteLikedProduct(UUID userId, UUID productId) {
@@ -171,21 +187,21 @@ public class ProductDao {
         User user = userDao.findById(UUID.fromString(resultSet.getString("user_id"))).orElse(null);
         Brand brand = brandDao.findByName(resultSet.getString("brand")).orElse(null);
         ChangeType changeType = changeTypeDao.findById(resultSet.getInt("change_type")).orElse(null);
-        return new Product(
-                resultSet.getObject("id", UUID.class),
-                resultSet.getTimestamp("timestamp").toLocalDateTime(),
-                user,
-                resultSet.getDouble("price"),
-                resultSet.getBoolean("is_closed"),
-                changeType,
-                resultSet.getDouble("change_value"),
-                resultSet.getString("change_wish"),
-                brand,
-                resultSet.getString("model"),
-                resultSet.getString("description")
-        );
+        return Product.builder()
+                .id(UUID.fromString(resultSet.getString("id")))
+                .brand(brand)
+                .changeType(changeType)
+                .changeValue(resultSet.getDouble("change_value"))
+                .model(resultSet.getString("model"))
+                .description(resultSet.getString("description"))
+                .changeWish(resultSet.getString("change_wish"))
+                .isClosed(resultSet.getBoolean("is_closed"))
+                .timestamp(resultSet.getTimestamp("timestamp").toLocalDateTime())
+                .user(user)
+                .model(resultSet.getString("model"))
+                .price(resultSet.getDouble("price"))
+                .build();
     }
-
     public static ProductDao getInstance() {
         return INSTANCE;
     }

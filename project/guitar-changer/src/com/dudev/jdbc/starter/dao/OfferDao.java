@@ -131,7 +131,7 @@ public class OfferDao implements Dao<UUID, Offer> {
             preparedStatement.setString(1, offer.getId().toString());
             preparedStatement.setString(2, offer.getBuyer().toString());
             preparedStatement.setString(3, offer.getInterchange().toString());
-            preparedStatement.setInt(4, offer.getChangeType().changeType());
+            preparedStatement.setInt(4, offer.getChangeType().getChangeType());
             preparedStatement.setDouble(5, offer.getChangeValue());
             preparedStatement.setTimestamp(6, Timestamp.valueOf(offer.getTimestamp()));
 
@@ -147,7 +147,7 @@ public class OfferDao implements Dao<UUID, Offer> {
              PreparedStatement preparedStatement = connection.prepareStatement(INSERT, Statement.RETURN_GENERATED_KEYS)) {
             preparedStatement.setString(1, offer.getBuyer().toString());
             preparedStatement.setString(2, offer.getInterchange().toString());
-            preparedStatement.setInt(3, offer.getChangeType().changeType());
+            preparedStatement.setInt(3, offer.getChangeType().getChangeType());
             preparedStatement.setDouble(4, offer.getChangeValue());
             preparedStatement.setTimestamp(5, Timestamp.valueOf(offer.getTimestamp()));
 
@@ -168,13 +168,13 @@ public class OfferDao implements Dao<UUID, Offer> {
         User buyer = userDao.findById(UUID.fromString(resultSet.getString("buyer"))).orElse(null);
         Product interchange = productDao.findById(UUID.fromString(resultSet.getString("interchange"))).orElse(null);
         ChangeType changeType = changeTypeDao.findById(resultSet.getInt("change_type")).orElse(null);
-        return new Offer(
-                UUID.fromString(resultSet.getString("id")),
-                buyer,
-                interchange,
-                changeType,
-                resultSet.getDouble("change_value"),
-                resultSet.getTimestamp("timestamp").toLocalDateTime()
-        );
+        return Offer.builder()
+                .id(UUID.fromString(resultSet.getString("id")))
+                .buyer(buyer)
+                .interchange(interchange)
+                .changeType(changeType)
+                .changeValue(resultSet.getDouble("change_value"))
+                .timestamp(resultSet.getTimestamp("timestamp").toLocalDateTime())
+                .build();
     }
 }

@@ -1,9 +1,12 @@
 package com.dudev.jdbc.starter.dao;
 
+import com.dudev.jdbc.starter.dto.GuitarFilter;
 import com.dudev.jdbc.starter.dto.PedalFilter;
+import com.dudev.jdbc.starter.dto.ProductFilter;
 import com.dudev.jdbc.starter.entity.*;
 import com.dudev.jdbc.starter.exception.DaoException;
 import com.dudev.jdbc.starter.util.ConnectionManager;
+import lombok.SneakyThrows;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -59,6 +62,9 @@ public class PedalDao implements Dao<UUID, Pedal> {
                 change_wish = ?
             WHERE id = ?          
             """;
+    private static final String DELETE_PEDALS = """
+            DELETE FROM project.pedals
+            """;
 
     public List<Pedal> findByPriceAndChangeType(double price, ChangeType changeType, int priceDirection) {
         char compareSign = switch (priceDirection) {
@@ -75,7 +81,7 @@ public class PedalDao implements Dao<UUID, Pedal> {
 
         try (Connection connection = ConnectionManager.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            preparedStatement.setInt(1, changeType.changeType());
+            preparedStatement.setInt(1, changeType.getChangeType());
             preparedStatement.setDouble(2, price);
 
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -191,17 +197,81 @@ public class PedalDao implements Dao<UUID, Pedal> {
             preparedStatement.setString(2, pedal.getDescription());
             preparedStatement.setString(3, pedal.getMedia());
             preparedStatement.setTimestamp(4, Timestamp.valueOf(pedal.getTimestamp()));
-            preparedStatement.setString(5, String.valueOf(pedal.getUser().id()));
+            preparedStatement.setString(5, String.valueOf(pedal.getUser().getId()));
             preparedStatement.setDouble(6, pedal.getPrice());
             preparedStatement.setString(7, pedal.getBrand().name());
             preparedStatement.setBoolean(8, pedal.isClosed());
-            preparedStatement.setInt(9, pedal.getChangeType().changeType());
+            preparedStatement.setInt(9, pedal.getChangeType().getChangeType());
             preparedStatement.setDouble(10, pedal.getChangeValue());
             preparedStatement.setString(11, pedal.getChangeWish());
 
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             throw new DaoException(e);
+        }
+    }
+
+    @SneakyThrows
+    public void delete(PedalFilter filter) {
+        List<String> whereConditions = new ArrayList<>();
+        List<Object> fields = new ArrayList<>();
+        if (filter.brand() != null) {
+            whereConditions.add(" brand = ?");
+            fields.add(filter.brand());
+        }
+        if (filter.changeType() != 0) {
+            whereConditions.add(" change_type = ?");
+            fields.add(filter.changeType());
+        }
+        whereConditions.add("is_closed = ?");
+        fields.add(filter.isClosed());
+        if (filter.userId() != null) {
+            whereConditions.add(" user_id = ?");
+            fields.add(filter.userId());
+        }
+        String sql = DELETE_PEDALS + " WHERE " + String.join(" AND ", whereConditions);
+
+        try (Connection connection = ConnectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            for (int i = 0; i < whereConditions.size(); i++) {
+                preparedStatement.setObject(i + 1, fields.get(i));
+            }
+            preparedStatement.executeUpdate();
+        }
+    }
+
+    @SneakyThrows
+    public void delete(PedalFilter filter, Connection connection) {
+        List<String> whereConditions = new ArrayList<>();
+        List<Object> fields = new ArrayList<>();
+        if (filter.brand() != null) {
+            whereConditions.add(" brand = ?");
+            fields.add(filter.brand());
+        }
+        if (filter.changeType() != 0) {
+            whereConditions.add(" change_type = ?");
+            fields.add(filter.changeType());
+        }
+        if (filter.isClosed()) {
+            whereConditions.add("is_closed = ?");
+            fields.add(true);
+        }
+        if (filter.userId() != null) {
+            whereConditions.add(" user_id = ?");
+            fields.add(filter.userId());
+        }
+        String sql = DELETE_PEDALS + " WHERE " + String.join(" AND ", whereConditions);
+        PreparedStatement preparedStatement = null;
+        try {
+            preparedStatement = connection.prepareStatement(sql);
+            for (int i = 0; i < whereConditions.size(); i++) {
+                preparedStatement.setObject(i + 1, fields.get(i));
+            }
+            preparedStatement.executeUpdate();
+        } finally {
+            if (preparedStatement != null) {
+                preparedStatement.close();
+            }
         }
     }
 
@@ -213,11 +283,11 @@ public class PedalDao implements Dao<UUID, Pedal> {
             preparedStatement.setString(2, pedal.getDescription());
             preparedStatement.setString(3, pedal.getMedia());
             preparedStatement.setTimestamp(4, Timestamp.valueOf(pedal.getTimestamp()));
-            preparedStatement.setString(5, pedal.getUser().id().toString());
+            preparedStatement.setString(5, pedal.getUser().getId().toString());
             preparedStatement.setDouble(6, pedal.getPrice());
             preparedStatement.setString(7, pedal.getBrand().name());
             preparedStatement.setBoolean(8, pedal.isClosed());
-            preparedStatement.setInt(9, pedal.getChangeType().changeType());
+            preparedStatement.setInt(9, pedal.getChangeType().getChangeType());
             preparedStatement.setDouble(10, pedal.getChangeValue());
             preparedStatement.setString(11, pedal.getChangeWish());
 
@@ -239,19 +309,20 @@ public class PedalDao implements Dao<UUID, Pedal> {
         ChangeType changeType = changeTypeDao.findById(resultSet.getInt("change_type")).orElse(null);
         Brand brand = brandDao.findByName(resultSet.getString("brand")).orElse(null);
         User user = userDao.findById(UUID.fromString(resultSet.getString("user_id"))).orElse(null);
-        return new Pedal(
-                UUID.fromString(resultSet.getString("id")),
-                resultSet.getString("model"),
-                resultSet.getString("description"),
-                resultSet.getString("media_name"),
-                resultSet.getTimestamp("timestamp").toLocalDateTime(),
-                user,
-                resultSet.getDouble("price"),
-                brand,
-                resultSet.getBoolean("is_closed"),
-                changeType,
-                resultSet.getDouble("change_value"),
-                resultSet.getString("change_wish")
-        );
+        return Pedal.builder()
+                .id(UUID.fromString(resultSet.getString("id")))
+                .brand(brand)
+                .changeType(changeType)
+                .changeValue(resultSet.getDouble("change_value"))
+                .model(resultSet.getString("model"))
+                .description(resultSet.getString("description"))
+                .changeWish(resultSet.getString("change_wish"))
+                .isClosed(resultSet.getBoolean("is_closed"))
+                .timestamp(resultSet.getTimestamp("timestamp").toLocalDateTime())
+                .user(user)
+                .model(resultSet.getString("model"))
+                .media(resultSet.getString("media_name"))
+                .price(resultSet.getDouble("price"))
+                .build();
     }
 }

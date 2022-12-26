@@ -28,6 +28,8 @@ public class ProductService {
         return INSTANCE;
     }
 
+
+
     public List<ProductDto> getAllProducts() {
         return productDao.findAll().stream()
                 .map(product -> new ProductDto(product.getId(), product.getBrand().name(), product.getModel(), product.getPrice()))
@@ -45,9 +47,9 @@ public class ProductService {
         Guitar guitar = guitarDao.findById(id).orElse(null);
         Pedal pedal = pedaldao.findById(id).orElse(null);
         if (guitar != null) {
-            return new GuitarDto(guitar.getYear(), guitar.getCountry(), guitar.getPickUps(), guitar.getWood(), guitar.getChangeType().description(), guitar.getChangeWish(), guitar.getChangeValue(), guitar.getDescription());
+            return new GuitarDto(guitar.getYear(), guitar.getCountry(), guitar.getPickUps(), guitar.getWood(), guitar.getChangeType().getDescription(), guitar.getChangeWish(), guitar.getChangeValue(), guitar.getDescription());
         } else if (pedal != null){
-            return new PedalDto(pedal.getDescription(), pedal.getChangeType().description(), pedal.getChangeValue(), pedal.getChangeWish());
+            return new PedalDto(pedal.getDescription(), pedal.getChangeType().getDescription(), pedal.getChangeValue(), pedal.getChangeWish());
         } else {
             return null;
         }
@@ -55,7 +57,7 @@ public class ProductService {
 
     public List<String> getAllUsersByProducts() {
         return productDao.findAll().stream()
-                .map(product -> product.getUser().firstName())
+                .map(product -> product.getUser().getFirstName())
                 .toList();
     }
 }

@@ -1,16 +1,22 @@
 package com.dudev.jdbc.starter.dao;
 
+import com.dudev.jdbc.starter.dto.UserFilter;
 import com.dudev.jdbc.starter.entity.Product;
 import com.dudev.jdbc.starter.entity.Role;
 import com.dudev.jdbc.starter.entity.User;
 import com.dudev.jdbc.starter.exception.DaoException;
 import com.dudev.jdbc.starter.util.ConnectionManager;
+import lombok.SneakyThrows;
+import org.postgresql.jdbc2.ArrayAssistant;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.*;
 
 public class UserDao implements Dao<UUID, User> {
 
@@ -30,12 +36,50 @@ public class UserDao implements Dao<UUID, User> {
             INSERT INTO project.users (first_name, last_name, phone_number, password, address, role, username)
             VALUES (?, ?, ?, ?, ?, ?, ?)
             """;
+    private static final String DELETE_SQL = """
+            DELETE FROM project.users 
+            WHERE id = ? :: uuid
+            """;
 
     public UserDao() {
     }
 
     public static UserDao getInstance() {
         return INSTANCE;
+    }
+
+
+    public List<User> findAll(UserFilter filter) {
+        List<String> whereConditions = new ArrayList<>();
+        List<Object> fields = new ArrayList<>();
+        if (filter.phoneNumber() != null) {
+            whereConditions.add(" phone_number = ? ");
+            fields.add(filter.phoneNumber());
+        }
+        if (filter.password() != null) {
+            whereConditions.add(" password = ?");
+            fields.add(filter.password());
+        }
+        if (filter.username() != null) {
+            whereConditions.add(" username = ?");
+            fields.add(filter.username());
+        }
+        String whereSql = String.join(" AND ", whereConditions);
+        String sql = FIND_ALL + "WHERE " + whereSql;
+        try (Connection connection = ConnectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            for (int i = 0; i < fields.size(); i++) {
+                preparedStatement.setObject(i + 1, fields.get(i));
+            }
+            List<User> users = new ArrayList<>();
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                users.add(createUser(resultSet));
+            }
+            return users;
+        } catch (SQLException e) {
+            throw new DaoException(e);
+        }
     }
 
     @Override
@@ -70,16 +114,16 @@ public class UserDao implements Dao<UUID, User> {
     }
 
     private User createUser(ResultSet resultSet) throws SQLException {
-        return new User(
-                UUID.fromString(resultSet.getString("id")),
-                resultSet.getString("first_name"),
-                resultSet.getString("last_name"),
-                resultSet.getString("phone_number"),
-                resultSet.getString("password"),
-                resultSet.getString("address"),
-                Role.valueOf(resultSet.getString("role")),
-                resultSet.getString("username")
-        );
+        return User.builder()
+                .id(UUID.fromString(resultSet.getString("id")))
+                .phoneNumber(resultSet.getString("phone_number"))
+                .password(resultSet.getString("password"))
+                .role(Role.find(resultSet.getString("role")).get())
+                .lastName(resultSet.getString("last_name"))
+                .firstName(resultSet.getString("first_name"))
+                .address(resultSet.getString("address"))
+                .username(resultSet.getString("username"))
+                .build();
     }
 
     @Override
@@ -91,13 +135,13 @@ public class UserDao implements Dao<UUID, User> {
     public User save(User user) {
         try (Connection connection = ConnectionManager.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(SAVE_SQL, Statement.RETURN_GENERATED_KEYS)) {
-            preparedStatement.setString(1, user.firstName());
-            preparedStatement.setString(2, user.lastName());
-            preparedStatement.setString(3, user.phoneNumber());
-            preparedStatement.setString(4, user.phoneNumber());
-            preparedStatement.setString(5, user.address());
-            preparedStatement.setString(6, user.role().name());
-            preparedStatement.setString(7, user.username());
+            preparedStatement.setString(1, user.getFirstName());
+            preparedStatement.setString(2, user.getLastName());
+            preparedStatement.setString(3, user.getPhoneNumber());
+            preparedStatement.setString(4, user.getPassword());
+            preparedStatement.setString(5, user.getAddress());
+            preparedStatement.setString(6, user.getRole().name());
+            preparedStatement.setString(7, user.getUsername());
 
             preparedStatement.executeUpdate();
             ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
@@ -105,10 +149,26 @@ public class UserDao implements Dao<UUID, User> {
             while (generatedKeys.next()) {
                 id = UUID.fromString(generatedKeys.getString("id"));
             }
-//            user.setId(id);
+            user.setId(id);
             return user;
         } catch (SQLException e) {
             throw new DaoException(e);
         }
+    }
+
+    @SneakyThrows
+    public User delete(UUID id, Connection connection) {
+        PreparedStatement preparedStatement = null;
+        User deletedUser = findById(id).orElse(null);
+        try {
+            preparedStatement = connection.prepareStatement(DELETE_SQL);
+            preparedStatement.setString(1, id.toString());
+            preparedStatement.executeUpdate();
+        } finally {
+            if (preparedStatement != null) {
+                preparedStatement.close();
+            }
+        }
+        return deletedUser;
     }
 }

@@ -1,4 +1,12 @@
 package com.dudev.jdbc.starter.entity;
 
-public record Category (int id, String name){
+import lombok.Builder;
+import lombok.Data;
+
+@Data
+@Builder
+public class Category {
+
+    private int id;
+    private String name;
 }
