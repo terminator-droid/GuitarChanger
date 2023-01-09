@@ -7,25 +7,29 @@
 --%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <html>
 <head>
     <title>Title</title>
 </head>
-<body>
+<%@include file="locale.jsp"%>
+<body style="background-color: lavender">
+
+<img width="200" height="100" src="${pageContext.request.contextPath}/images/tester.jpg" alt="User image">
   <form action="/login" method="post">
-      <label for="username">Username:
+      <label for="username"><fmt:message key="page.login.username"/>:
         <input name="username" type="text" id="username" value="${applicationScope.username}">
       </label><br>
-      <label for="password">Password:
-        <input name="username" type="text" id="password">
+      <label for="password"><fmt:message key="page.login.password"/>:
+        <input name="password" type="text" id="password">
       </label><br>
-    <button type="submit">Login</button>
+    <button type="submit"><fmt:message key="page.login.button.login"/></button>
     <a href="/registration">
-      <button type="button">Register</button>
+      <button type="button"><fmt:message key="page.login.button.register"/></button>
     </a>
       <c:if test="${applicationScope.error != null}">
           <div style="color: red">
-              <span>Incorrect username or password</span>
+              <span><fmt:message key="page.login.error"/></span>
           </div>
       </c:if>
   </form>

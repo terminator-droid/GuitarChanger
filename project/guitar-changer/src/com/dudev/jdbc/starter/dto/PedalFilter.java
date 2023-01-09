@@ -6,5 +6,5 @@ import java.util.UUID;
 @Builder
 public record PedalFilter(String model, UUID userId,
                           double price, String brand, boolean isClosed, int changeType, double changeValue,
-                          String changeWish) {
+                          String changeWish, UUID id) {
 }

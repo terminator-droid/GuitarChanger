@@ -2,52 +2,56 @@ package com.dudev.jdbc.starter.validator;
 
 import com.dudev.jdbc.starter.dao.UserDao;
 import com.dudev.jdbc.starter.dto.CreateUserDto;
-import com.dudev.jdbc.starter.dto.UserDto;
 import com.dudev.jdbc.starter.dto.UserFilter;
+import com.dudev.jdbc.starter.entity.User;
 import com.dudev.jdbc.starter.util.PhoneNumberFormatter;
 import com.dudev.jdbc.starter.util.UsernameFormatChecker;
-import com.oracle.wls.shaded.org.apache.bcel.generic.NEW;
 
-public class CreateUserValidator implements Validator<CreateUserDto> {
+public class UserValidator implements Validator<CreateUserDto> {
 
-    private static final CreateUserValidator INSTANCE = new CreateUserValidator();
+    private static final UserValidator INSTANCE = new UserValidator();
     private static final UserDao userDao = UserDao.getInstance();
+    private static final UsernameValidator usernameValidator = UsernameValidator.getInstance();
+    private static final PasswordValidator passwordValidator = PasswordValidator.getInstance();
+
 
     @Override
-    public ValidationResult isValid(CreateUserDto object) {
+    public ValidationResult isValid(CreateUserDto userDto) {
         ValidationResult validationResult = new ValidationResult();
-        if (object.getUsername() == null) {
+        if (userDto.getUsername() == null) {
             validationResult.add(Error.of("404.username.null", "username can't be empty"));
-        } else if (!UsernameFormatChecker.isValid(object.getUsername())) {
-            validationResult.add(Error.of("404.username", "length of the field username must be " +
+        } else if (!usernameValidator.isValid(userDto.getUsername()).isValid()) {
+            validationResult.add(Error.of("400.username", "length of the field username must be " +
                     "6 to 16 characters long and it can contain letters numbers and signs _-"));
         } else if (!userDao.findAll(UserFilter.builder()
-                .username(object.getUsername())
+                .username(userDto.getUsername())
                 .build()).isEmpty()) {
             validationResult.add(Error.of("409.username", "user with such username already exists"));
         }
 
-        if (object.getPhoneNumber() == null) {
+        if (userDto.getPhoneNumber() == null) {
             validationResult.add(Error.of("404.phoneNumber.null", "phone number can't be empty"));
-        } else if (!PhoneNumberFormatter.isValid(object.getPhoneNumber())) {
-            validationResult.add(Error.of("404.phoneNumber", "invalid phone number"));
+        } else if (!PhoneNumberFormatter.isValid(userDto.getPhoneNumber())) {
+            validationResult.add(Error.of("400.phoneNumber", "invalid phone number"));
         } else if (!userDao.findAll(UserFilter.builder()
-                .phoneNumber(PhoneNumberFormatter.format(object.getPhoneNumber()))
+                .phoneNumber(PhoneNumberFormatter.format(userDto.getPhoneNumber()))
                 .build()).isEmpty()) {
             validationResult.add(Error.of("409.phoneNumber", "user with such phone number already exists"));
         }
 
-        if (object.getPassword() == null) {
+        if (userDto.getPassword() == null) {
             validationResult.add(Error.of("404.password.null", "password can't be empty"));
+        } else if (!passwordValidator.isValid(userDto.getPassword()).isValid()) {
+            validationResult.addAll(passwordValidator.isValid(userDto.getPassword()).getErrors());
         } else if (!userDao.findAll(UserFilter.builder()
-                .password(object.getPassword())
+                .password(userDto.getPassword())
                 .build()).isEmpty()) {
             validationResult.add(Error.of("409.password", "user with such password already exists"));
         }
         return validationResult;
     }
 
-    public static CreateUserValidator getInstance() {
+    public static UserValidator getInstance() {
         return INSTANCE;
     }
 }

@@ -29,11 +29,31 @@ public class BrandDao implements Dao<Integer, Brand> {
             """
             WHERE name = ?
             """;
+    public static final String FIND_BY_CATEGORY = """
+            SELECT * FROM project.brands 
+            WHERE category = ?
+            """;
+
     private BrandDao() {
     }
 
     public static BrandDao getInstance() {
         return INSTANCE;
+    }
+
+    public List<Brand> findByCategory(int category) {
+        try (Connection connection = ConnectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(FIND_BY_CATEGORY)) {
+            preparedStatement.setObject(1, category);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            List<Brand> brands = new ArrayList<>();
+            while (resultSet.next()) {
+                brands.add(createBrand(resultSet));
+            }
+            return brands;
+        } catch (SQLException e) {
+            throw new DaoException(e);
+        }
     }
 
     @Override

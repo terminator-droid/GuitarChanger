@@ -1,16 +1,26 @@
 package com.dudev.jdbc.starter;
 
+import com.dudev.jdbc.starter.dao.CategoryDao;
 import com.dudev.jdbc.starter.dao.ChangeTypeDao;
+import com.dudev.jdbc.starter.dao.OfferDao;
 import com.dudev.jdbc.starter.dao.ProductDao;
 import com.dudev.jdbc.starter.dao.UserDao;
 import com.dudev.jdbc.starter.dto.Dto;
+import com.dudev.jdbc.starter.dto.OfferDto;
 import com.dudev.jdbc.starter.dto.ProductDto;
 import com.dudev.jdbc.starter.dto.UserFilter;
+import com.dudev.jdbc.starter.entity.Category;
+import com.dudev.jdbc.starter.entity.ChangeType;
+import com.dudev.jdbc.starter.entity.Product;
+import com.dudev.jdbc.starter.services.ChangeTypeService;
+import com.dudev.jdbc.starter.services.OffersService;
 import com.dudev.jdbc.starter.services.ProductService;
 import com.dudev.jdbc.starter.services.UserService;
+import com.dudev.jdbc.starter.util.ConnectionManager;
 import com.dudev.jdbc.starter.util.PhoneNumberFormatter;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.SortedMap;
 import java.util.UUID;
 
@@ -21,8 +31,25 @@ public class DaoRunner {
         ChangeTypeDao changeTypeDao = ChangeTypeDao.getInstance();
 
 
-        System.out.println(UserService.getInstance()
-                .login("grover_12", "fqwefgy245").orElse(null));
+//        List<ChangeType> changeTypes = ChangeTypeService.getInstance().getChangeTypes();
+//        System.out.println(changeTypes);
+//        Optional<Product> byId = ProductDao.getInstance().findById(UUID.fromString("d63de2fb-ecb7-43c1-b0cf-f41a55629ea3"));
+//        System.out.println(byId.get());
+//
+//        Optional<Category> byId1 = CategoryDao.getInstance().findById(2);
+//        System.out.println(byId1.get());
+        OfferDto offerById = OffersService.getInstance().getOfferById(UUID.fromString("4237a6f2-81dc-4ff5-b485-8ef30bf7bab2"));
+        System.out.println(offerById);
+//        OfferDao.getInstance().acceptOffer(UUID.fromString("4237a6f2-81dc-4ff5-b485-8ef30bf7bab2"));
+//        List<OfferDto> offersByUser = OffersService.getInstance().getOffersByUser(UUID.fromString("04eef978-f6d2-465b-8066-886e9328c7dd"));
+//        System.out.println(offersByUser);
+
+//        List<ProductDto> offerProducts = OffersService.getInstance().getOfferProducts(UUID.fromString("74d4afef-e998-4c03-bc60-f2eac419a6b9"));
+//        System.out.println(offerProducts);
+
+//        System.out.println(OfferDao.getInstance().getOffersByUser(UUID.fromString("04eef978-f6d2-465b-8066-886e9328c7dd")));;
+//        System.out.println(UserService.getInstance()
+//                .login("grover_12", "fqwefgy245").orElse(null));
 //        System.out.println(PhoneNumberFormatter.format("892938"));
 //        System.out.println(PhoneNumberFormatter.isValid("+79281302938"));
 //        System.out.println(PhoneNumberFormatter.format("+7 962 742 78 54"));

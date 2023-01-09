@@ -26,7 +26,7 @@ public class    UserProductsServlet extends HttpServlet {
         UserDto user = userService.findById(UUID.fromString(req.getParameter("userId")));
         req.setAttribute("user", user);
         req.setAttribute("products", productService.findProductsByUser(UUID.fromString(req.getParameter("userId")),
-                Integer.parseInt(req.getParameter("offset"))));
+                Integer.parseInt(req.getParameter("offset")), false));
         RequestDispatcher dispatcher = req.getRequestDispatcher(JSPHelper.getPath("products"));
         dispatcher.forward(req, resp);
     }

@@ -19,7 +19,7 @@ public class ProductsServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        req.setAttribute("products", productService.getAllProducts());
+//        req.setAttribute("products", productService.getAllProducts());
         RequestDispatcher dispatcher = req.getRequestDispatcher(JSPHelper.getPath("products"));
         dispatcher.forward(req, resp);
     }

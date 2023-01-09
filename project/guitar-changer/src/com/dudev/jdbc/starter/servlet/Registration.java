@@ -41,7 +41,7 @@ public class Registration extends HttpServlet {
         req.getServletContext().setAttribute("address", req.getParameter("address"));
         req.getServletContext().setAttribute("role", req.getParameter("role"));
         if (req.getParameter("role").equals(Role.ADMIN.name())) {
-            resp.sendRedirect("/administration");
+                resp.sendRedirect("/administration");
         } else {
             try {
                 userService.createUser(

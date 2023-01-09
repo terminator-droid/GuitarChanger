@@ -4,18 +4,16 @@ import com.dudev.jdbc.starter.dao.GuitarDao;
 import com.dudev.jdbc.starter.dao.PedalDao;
 import com.dudev.jdbc.starter.dao.UserDao;
 import com.dudev.jdbc.starter.dto.*;
-import com.dudev.jdbc.starter.entity.Pedal;
-import com.dudev.jdbc.starter.entity.Role;
 import com.dudev.jdbc.starter.entity.User;
-import com.dudev.jdbc.starter.exception.DaoException;
 import com.dudev.jdbc.starter.exception.ValidationException;
-import com.dudev.jdbc.starter.mapper.CreateUserMapper;
-import com.dudev.jdbc.starter.mapper.GetUserMapper;
+import com.dudev.jdbc.starter.mapper.UserMapper;
 import com.dudev.jdbc.starter.util.ConnectionManager;
-import com.dudev.jdbc.starter.validator.CreateUserValidator;
+import com.dudev.jdbc.starter.validator.Error;
+import com.dudev.jdbc.starter.validator.UserValidator;
 import com.dudev.jdbc.starter.validator.ValidationResult;
+import com.oracle.wls.shaded.org.apache.bcel.generic.ARETURN;
+import jakarta.servlet.annotation.ServletSecurity;
 import lombok.NoArgsConstructor;
-import org.apache.taglibs.standard.lang.jstl.test.beans.Factory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -34,9 +32,8 @@ public final class UserService {
         return INSTANCE;
     }
 
-    private final CreateUserValidator userValidator = CreateUserValidator.getInstance();
-    private final CreateUserMapper userMapper = CreateUserMapper.getInstance();
-    private static final GetUserMapper getUserMapper = GetUserMapper.getInstance();
+    private final UserValidator userValidator = UserValidator.getInstance();
+    private final UserMapper userMapper = UserMapper.getInstance();
 
     public List<UserDto> getAllUsers() {
         return userDao.findAll()
@@ -51,12 +48,27 @@ public final class UserService {
                 .toList();
     }
 
-    public Optional<UserDto> login(String username, String password) {
+    public boolean changePassword(String currentPassword, String newPassword) {
         return userDao.findAll(UserFilter.builder()
+                        .password(currentPassword)
+                        .build()).stream().findFirst()
+                .map(user -> {
+                    userDao.updatePassword(user.getId().toString(), newPassword);
+                    return user;
+                })
+                .isPresent();
+
+    }
+
+    public Optional<UserDto> login(String username, String password) {
+        return username == null || password == null
+                ? Optional.empty()
+                : userDao.findAll(UserFilter.builder()
                 .password(password)
                 .username(username)
-                .build()).stream().findFirst().map(getUserMapper::mapFrom);
+                .build()).stream().findFirst().map(userMapper::mapFrom);
     }
+
     public UserDto deleteUser(UUID id) throws SQLException {
         Connection connection = null;
         UserDto deletedUser = null;

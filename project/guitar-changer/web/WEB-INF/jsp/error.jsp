@@ -11,7 +11,14 @@
 <head>
     <title>Title</title>
 </head>
-<body>
+<body style="background-color: lavender">
   <h1>${requestScope.error}</h1>
+<c:if test="${not empty requestScope.prevPage}">
+    <form method="get">
+        <a href="${requestScope.prevPage}">
+            <button type="button">Go back</button>
+        </a>
+    </form>
+</c:if>
 </body>
 </html>
