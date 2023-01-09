@@ -16,4 +16,5 @@ public class Offer {
     private ChangeType changeType;
     private double changeValue;
     private LocalDateTime timestamp;
+    private boolean accepted;
 }

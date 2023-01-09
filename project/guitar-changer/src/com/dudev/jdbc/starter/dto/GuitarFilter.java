@@ -9,5 +9,5 @@ import java.util.UUID;
 @Builder
 public record GuitarFilter(int limit, int offset, String model, int year, String country, UUID user, Double price,
                            String brand, boolean isClosed, int changeType,
-                           double changeValue, String changeWish) {
+                           double changeValue, String changeWish, UUID id) {
 }

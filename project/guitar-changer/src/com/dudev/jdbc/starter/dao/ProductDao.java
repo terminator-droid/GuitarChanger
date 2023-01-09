@@ -1,5 +1,7 @@
 package com.dudev.jdbc.starter.dao;
 
+import com.dudev.jdbc.starter.dto.GuitarFilter;
+import com.dudev.jdbc.starter.dto.PedalFilter;
 import com.dudev.jdbc.starter.dto.ProductDto;
 import com.dudev.jdbc.starter.dto.ProductFilter;
 import com.dudev.jdbc.starter.entity.*;
@@ -22,6 +24,8 @@ public class ProductDao {
     private static final BrandDao brandDao = BrandDao.getInstance();
     private static final UserDao userDao = UserDao.getInstance();
     private static final ChangeTypeDao changeTypeDao = ChangeTypeDao.getInstance();
+    private static final GuitarDao guitarDao = GuitarDao.getInstance();
+    private static final PedalDao pedalDao = PedalDao.getInstance();
 
     private static final String DELETE_PRODUCTS = """
             DELETE FROM products
@@ -59,10 +63,11 @@ public class ProductDao {
                     model,
                     description
             FROM project.pedals) as prod 
+           
             """;
 
     private static final String FIND_BY_ID_SQL = FIND_ALL_SQL + """
-            WHERE id = ?
+            WHERE id = ? :: uuid
             """;
 
     private ProductDao() {
@@ -75,6 +80,17 @@ public class ProductDao {
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             preparedStatement.executeUpdate();
         }
+    }
+
+    @SneakyThrows
+    public void deleteById(UUID id, Connection connection) {
+        guitarDao.delete(GuitarFilter.builder().id(id).build(), connection);
+        pedalDao.delete(PedalFilter.builder().id(id).build(), connection);
+    }
+
+    public void closeProduct(UUID id, Connection connection) {
+        guitarDao.closeGuitar(id, connection);
+        pedalDao.closePedal(id, connection);
     }
 
     public void deleteLikedProduct(UUID userId, UUID productId) {
@@ -109,19 +125,23 @@ public class ProductDao {
             parameters.add(filter.userId());
         }
         if (filter.price() != 0) {
-            int lowerBoundOfPrice = filter.price() - CHANGE_DELTA > 0 ? (int) (filter.price() - CHANGE_DELTA) : 0;
+            double lowerBoundOfPrice = filter.price() - CHANGE_DELTA > 0 ? (double) (filter.price() - CHANGE_DELTA) : 0;
             whereSql.add(" prod.price between " + lowerBoundOfPrice + " AND " + (filter.price() + CHANGE_DELTA));
-            parameters.add(filter.price());
         }
-        whereSql.add(" prod.is_closed = ? ");
-        parameters.add(filter.isClosed());
+        if (!filter.isClosed()) {
+            whereSql.add(" prod.is_closed = ? ");
+            parameters.add(false);
+        }
         if (filter.changeType() != 0) {
             whereSql.add(" prod.change_type = ? ");
             parameters.add(filter.changeType());
         }
         if (filter.changeValue() != 0) {
-            whereSql.add(" prod.change_value = ?");
-            parameters.add(filter.changeValue());
+            double lowerBoundOfPrice = filter.changeValue() - CHANGE_DELTA > 0 ? (double) (filter.changeValue() - CHANGE_DELTA) : 0;
+            whereSql.add(" prod.change_value between " + lowerBoundOfPrice + " AND " + (filter.changeValue() + CHANGE_DELTA));
+//
+//            whereSql.add(" prod.change_value = ?");
+//            parameters.add(filter.changeValue());
         }
         if (filter.changeWish() != null) {
             whereSql.add(" prod.change_wish LIKE ?");
@@ -154,8 +174,9 @@ public class ProductDao {
     }
 
     public List<Product> findAll() {
+        String where = " where is_closed = false";
         try (Connection connection = ConnectionManager.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(FIND_ALL_SQL)) {
+             PreparedStatement preparedStatement = connection.prepareStatement(FIND_ALL_SQL + where)) {
             ResultSet resultSet = preparedStatement.executeQuery();
             List<Product> products = new ArrayList<>();
             while (resultSet.next()) {
@@ -202,6 +223,7 @@ public class ProductDao {
                 .price(resultSet.getDouble("price"))
                 .build();
     }
+
     public static ProductDao getInstance() {
         return INSTANCE;
     }

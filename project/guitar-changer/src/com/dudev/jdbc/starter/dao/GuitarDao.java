@@ -26,6 +26,11 @@ public class GuitarDao implements Dao<UUID, Guitar> {
     private static final BrandDao brandDao = BrandDao.getInstance();
 
     private static final UserDao userDao = UserDao.getInstance();
+
+    private static final String CLOSE = """
+            UPDATE project.guitars SET is_closed = true
+            WHERE id = ? 
+            """;
     private static final String FIND_ALL_SQL = """
             SELECT id, model, id, model, description, year,
             country, pick_ups, fingerboard_wood, media_name, timestamp,
@@ -41,9 +46,9 @@ public class GuitarDao implements Dao<UUID, Guitar> {
             WHERE id = ?
             """;
     public static final String SAVE_SQL = """
-            INSERT INTO guitars (model, description, year, country, pick_ups, fingerboard_wood, media_name, timestamp, user_id, price, brand, change_type, change_value, change_wish)
+            INSERT INTO project.guitars (model, description, year, country, pick_ups, fingerboard_wood, media_name, timestamp, user_id, price, brand, is_closed, change_type, change_value, change_wish)
             VALUES
-            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (?, ?, ?, ?, ?, ?, ?, ?, ? :: uuid, ?, ?, ?, ?, ?, ?)
             """;
     private static final String UPDATE_SQL = """
             UPDATE guitars
@@ -75,6 +80,21 @@ public class GuitarDao implements Dao<UUID, Guitar> {
 
     public static GuitarDao getInstance() {
         return INSTANCE;
+    }
+
+    @SneakyThrows
+    public void closeGuitar(UUID guitarId, Connection connection) {
+        PreparedStatement preparedStatement = null;
+        try {
+            preparedStatement = connection.prepareStatement(CLOSE);
+            preparedStatement.setObject(1, guitarId);
+
+            preparedStatement.executeUpdate();
+        } finally {
+            if (preparedStatement != null) {
+                preparedStatement.close();
+            }
+        }
     }
 
     public List<Guitar> findByPriceAndChangeType(double price, ChangeType changeType, int priceDirection) {
@@ -214,7 +234,7 @@ public class GuitarDao implements Dao<UUID, Guitar> {
             preparedStatement.setTimestamp(7, Timestamp.valueOf(guitar.getTimestamp()));
             preparedStatement.setString(8, String.valueOf(guitar.getUser().getId()));
             preparedStatement.setDouble(9, guitar.getPrice());
-            preparedStatement.setString(10, guitar.getBrand().name());
+            preparedStatement.setString(10, guitar.getBrand().getName());
             preparedStatement.setBoolean(11, guitar.isClosed());
             preparedStatement.setInt(12, guitar.getChangeType().getChangeType());
             preparedStatement.setDouble(13, guitar.getChangeValue());
@@ -240,7 +260,7 @@ public class GuitarDao implements Dao<UUID, Guitar> {
             preparedStatement.setTimestamp(8, Timestamp.valueOf(guitar.getTimestamp()));
             preparedStatement.setString(9, guitar.getUser().getId().toString());
             preparedStatement.setDouble(10, guitar.getPrice());
-            preparedStatement.setString(11, guitar.getBrand().name());
+            preparedStatement.setString(11, guitar.getBrand().getName());
             preparedStatement.setBoolean(12, guitar.isClosed());
             preparedStatement.setInt(13, guitar.getChangeType().getChangeType());
             preparedStatement.setDouble(14, guitar.getChangeValue());
@@ -309,6 +329,10 @@ public class GuitarDao implements Dao<UUID, Guitar> {
             whereConditions.add(" user_id = ?");
             fields.add(filter.user());
         }
+        if (filter.id() != null) {
+            whereConditions.add(" id = ?");
+            fields.add(filter.id());
+        }
         String sql = DELETE_GUITARS + " WHERE " + String.join(" AND ", whereConditions);
         PreparedStatement preparedStatement = null;
         try {
@@ -324,7 +348,7 @@ public class GuitarDao implements Dao<UUID, Guitar> {
         }
     }
 
-    private Guitar createGuitar(ResultSet resultSet) throws SQLException {
+    private Guitar  createGuitar(ResultSet resultSet) throws SQLException {
         ChangeType changeType = changeTypeDao.findById(resultSet.getInt("change_type")).orElse(null);
         Brand brand = brandDao.findByName(resultSet.getString("brand")).orElse(null);
         User user = userDao.findById(UUID.fromString(resultSet.getString("user_id"))).orElse(null);

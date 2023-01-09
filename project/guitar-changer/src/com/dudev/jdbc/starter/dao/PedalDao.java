@@ -24,6 +24,11 @@ public class PedalDao implements Dao<UUID, Pedal> {
     private static final BrandDao brandDao = BrandDao.getInstance();
 
     private static final UserDao userDao = UserDao.getInstance();
+
+    private static final String CLOSE = """
+            UPDATE project.pedals SET is_closed = true
+            WHERE id = ? 
+            """;
     private static final String FIND_ALL_SQL = """
             SELECT id, model, id, model, description, media_name, timestamp,
             user_id, price, brand, is_closed, change_type, change_value, change_wish
@@ -66,6 +71,21 @@ public class PedalDao implements Dao<UUID, Pedal> {
             DELETE FROM project.pedals
             """;
 
+
+    @SneakyThrows
+    public void closePedal(UUID id, Connection connection) {
+        PreparedStatement preparedStatement = null;
+        try {
+            preparedStatement = connection.prepareStatement(CLOSE);
+            preparedStatement.setObject(1, id);
+
+            preparedStatement.executeUpdate();
+        } finally {
+            if (preparedStatement != null) {
+                preparedStatement.close();
+            }
+        }
+    }
     public List<Pedal> findByPriceAndChangeType(double price, ChangeType changeType, int priceDirection) {
         char compareSign = switch (priceDirection) {
             case 1 -> '>';
@@ -199,7 +219,7 @@ public class PedalDao implements Dao<UUID, Pedal> {
             preparedStatement.setTimestamp(4, Timestamp.valueOf(pedal.getTimestamp()));
             preparedStatement.setString(5, String.valueOf(pedal.getUser().getId()));
             preparedStatement.setDouble(6, pedal.getPrice());
-            preparedStatement.setString(7, pedal.getBrand().name());
+            preparedStatement.setString(7, pedal.getBrand().getName());
             preparedStatement.setBoolean(8, pedal.isClosed());
             preparedStatement.setInt(9, pedal.getChangeType().getChangeType());
             preparedStatement.setDouble(10, pedal.getChangeValue());
@@ -260,6 +280,10 @@ public class PedalDao implements Dao<UUID, Pedal> {
             whereConditions.add(" user_id = ?");
             fields.add(filter.userId());
         }
+        if (filter.id() != null) {
+            whereConditions.add(" id = ?");
+            fields.add(filter.id());
+        }
         String sql = DELETE_PEDALS + " WHERE " + String.join(" AND ", whereConditions);
         PreparedStatement preparedStatement = null;
         try {
@@ -285,7 +309,7 @@ public class PedalDao implements Dao<UUID, Pedal> {
             preparedStatement.setTimestamp(4, Timestamp.valueOf(pedal.getTimestamp()));
             preparedStatement.setString(5, pedal.getUser().getId().toString());
             preparedStatement.setDouble(6, pedal.getPrice());
-            preparedStatement.setString(7, pedal.getBrand().name());
+            preparedStatement.setString(7, pedal.getBrand().getName());
             preparedStatement.setBoolean(8, pedal.isClosed());
             preparedStatement.setInt(9, pedal.getChangeType().getChangeType());
             preparedStatement.setDouble(10, pedal.getChangeValue());

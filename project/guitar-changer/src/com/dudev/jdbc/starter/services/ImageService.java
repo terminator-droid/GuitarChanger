@@ -28,7 +28,7 @@ public class ImageService {
             Files.createDirectories(fullPath.getParent());
             Files.write(fullPath, imageContent.readAllBytes(), CREATE, TRUNCATE_EXISTING);
         }
-    }
+        }
     @SneakyThrows
     public Optional<InputStream> get(String imagePath) {
         Path imageFullPath = Path.of(basePath, imagePath);

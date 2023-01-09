@@ -13,6 +13,9 @@ public class ValidationResult {
         this.errors.add(error);
     }
 
+    public void addAll(List<Error> errors) {
+        this.errors.addAll(errors);
+    }
     public boolean isValid() {
         return errors.isEmpty();
     }

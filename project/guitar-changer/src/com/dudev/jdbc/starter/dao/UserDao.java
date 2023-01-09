@@ -40,6 +40,10 @@ public class UserDao implements Dao<UUID, User> {
             DELETE FROM project.users 
             WHERE id = ? :: uuid
             """;
+    private static final String UPDATE_PASSWORD = """
+            UPDATE project.users SET password = ?
+            WHERE id = ? :: uuid
+            """;
 
     public UserDao() {
     }
@@ -170,5 +174,16 @@ public class UserDao implements Dao<UUID, User> {
             }
         }
         return deletedUser;
+    }
+
+    @SneakyThrows
+    public void updatePassword(String userId, String password) {
+        try (Connection connection = ConnectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(UPDATE_PASSWORD)) {
+            preparedStatement.setString(1, password);
+            preparedStatement.setString(2, userId);
+            preparedStatement.executeUpdate();
+        }
+
     }
 }
