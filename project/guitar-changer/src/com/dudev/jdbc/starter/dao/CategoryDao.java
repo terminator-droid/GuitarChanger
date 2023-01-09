@@ -49,10 +49,10 @@ public class CategoryDao implements Dao<Integer, Category> {
     }
 
     private Category createCategory(ResultSet resultSet) throws SQLException {
-        return new Category(
-                resultSet.getInt("id"),
-                resultSet.getString("name")
-        );
+        return Category.builder()
+                .id(resultSet.getInt("id"))
+                .name(resultSet.getString("name"))
+                .build();
     }
 
     @Override

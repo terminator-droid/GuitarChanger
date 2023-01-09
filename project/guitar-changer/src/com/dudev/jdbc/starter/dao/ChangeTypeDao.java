@@ -42,7 +42,10 @@ public class ChangeTypeDao implements Dao<Integer, ChangeType> {
             ResultSet resultSet = preparedStatement.executeQuery();
             ChangeType changeType = null;
             if (resultSet.next()) {
-                changeType = new ChangeType(resultSet.getInt("change_type"), resultSet.getString("description"));
+                changeType = ChangeType.builder()
+                        .changeType(resultSet.getInt("change_type"))
+                        .description(resultSet.getString("description"))
+                        .build();
             }
             return Optional.ofNullable(changeType);
         } catch (SQLException e) {

@@ -28,13 +28,5 @@ public class DownloadServlet extends HttpServlet {
              InputStream resourceAsStream = DownloadServlet.class.getClassLoader().getResourceAsStream("first.json")) {
             outputStream.write(resourceAsStream.readAllBytes());
         }
-
-
-
-
-//        try (PrintWriter writer = resp.getWriter()) {
-//            writer.write("Data from servlet");
-//        }
-
     }
 }

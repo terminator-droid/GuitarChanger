@@ -14,10 +14,24 @@
 </head>
 <body>
 <h1>Users:</h1>
-    <ul>
+<ul>
+    <c:forEach items="${requestScope.users}" var="user">
+        <li>
+            <a href="/user-products?userId=${user.id}&offset=0">${user.username}, ${user.firstName}, ${user.lastName}, ${user.role}</a>
+        </li>
+    </c:forEach>
+</ul>
+<a>Delete user</a>
+<form method="post" action="/users">
+    <select name="userId">
         <c:forEach items="${requestScope.users}" var="user">
-            <li> ${user.username}, ${user.firstName}, ${user.lastName}, ${user.role}</li>
+            <option value="${user.id}">${user.username}</option>
         </c:forEach>
-    </ul>
+    </select>
+    <button type="submit">Delete</button>
+    <c:if test="${not empty requestScope.deletedUser}">
+        <div style="color: cadetblue">User ${requestScope.deletedUser.username} was deleted</div>
+    </c:if>
+</form>
 </body>
 </html>
